@@ -7,6 +7,7 @@ const root = fileURLToPath(new URL('../', import.meta.url));
 const port = 3167;
 const origin = 'http://127.0.0.1:' + port;
 const child = spawn(process.execPath, [
+  '--import', join(root, 'scripts', 'auth-provider-fixture.mjs'),
   join(root, 'node_modules', 'next', 'dist', 'bin', 'next'),
   'start', '--hostname', '127.0.0.1', '--port', String(port),
 ], {
@@ -30,6 +31,18 @@ for (const stream of [child.stdout, child.stderr]) {
 
 async function get(url, options = {}) {
   return fetch(origin + url, { redirect: 'manual', ...options });
+}
+
+function responseCookies(response) {
+  return response.headers.getSetCookie().map(cookie => cookie.split(';', 1)[0]);
+}
+
+function expiredSession(cookie) {
+  const prefix = 'sb-example-auth-token=base64-';
+  assert.ok(cookie?.startsWith(prefix), 'the callback must write a session cookie');
+  const session = JSON.parse(Buffer.from(cookie.slice(prefix.length), 'base64url').toString());
+  session.expires_at = 1;
+  return prefix + Buffer.from(JSON.stringify(session)).toString('base64url');
 }
 
 async function waitForServer() {
@@ -76,7 +89,32 @@ try {
   });
   assert.equal(denied.status, 403);
 
-  console.log('Drawing ID OAuth smoke tests passed (dummy client, no external auth calls).');
+  const validCallback = await get('/api/drawing-id/callback?' + new URLSearchParams({
+    code: 'fixture-code',
+    state: location.searchParams.get('state'),
+  }), { headers: { Cookie: responseCookies(start).join('; ') } });
+  assert.equal(new URL(validCallback.headers.get('location')).searchParams.get('drawing_id'), 'connected');
+  const sessionCookie = responseCookies(validCallback).find(cookie => cookie.startsWith('sb-example-auth-token='));
+  const profile = { configured: true, user: { id: 'fake-user', displayName: 'Drawing Tester' } };
+
+  const current = await get('/api/drawing-id/me', { headers: { Cookie: sessionCookie } });
+  assert.deepEqual(await current.json(), profile);
+
+  const refreshed = await get('/api/drawing-id/me', { headers: { Cookie: expiredSession(sessionCookie) } });
+  assert.deepEqual(await refreshed.json(), profile);
+  const renewedCookie = responseCookies(refreshed).find(cookie => cookie.startsWith('sb-example-auth-token='));
+  assert.ok(renewedCookie && renewedCookie !== sessionCookie, 'refresh must persist the rotated tokens');
+
+  const signedOut = await get('/api/drawing-id/logout', {
+    method: 'POST',
+    headers: { Origin: origin, Cookie: renewedCookie },
+  });
+  assert.equal(signedOut.status, 200);
+  assert.ok(responseCookies(signedOut).includes('sb-example-auth-token='));
+  const afterLogout = await get('/api/drawing-id/me');
+  assert.deepEqual(await afterLogout.json(), { configured: true, user: null });
+
+  console.log('Drawing ID OAuth smoke tests passed (simulated provider, including refresh and local logout).');
 } finally {
   child.kill('SIGTERM');
 }

@@ -50,9 +50,37 @@ function privateHeaders(response: NextResponse) {
   return response;
 }
 
+function requestOAuthToken(settings: Settings, parameters: Record<string, string>, signal?: AbortSignal | null) {
+  return fetch(new URL("/auth/v1/oauth/token", settings.supabaseUrl), {
+    method: "POST",
+    cache: "no-store",
+    headers: {
+      "Content-Type": "application/x-www-form-urlencoded",
+      Accept: "application/json",
+    },
+    body: new URLSearchParams({ ...parameters, client_id: settings.clientId }),
+    signal: signal ? AbortSignal.any([signal, AbortSignal.timeout(10000)]) : AbortSignal.timeout(10000),
+  });
+}
+
+function drawingIdFetch(settings: Settings): typeof fetch {
+  const defaultRefreshUrl = new URL("/auth/v1/token?grant_type=refresh_token", settings.supabaseUrl).href;
+
+  return (input, init) => {
+    // Supabase Auth's SDK stores the session, but an OAuth refresh token requires its client ID.
+    if (input !== defaultRefreshUrl || init?.method !== "POST" || typeof init.body !== "string") {
+      return fetch(input, init);
+    }
+
+    const { refresh_token }: { refresh_token: string } = JSON.parse(init.body);
+    return requestOAuthToken(settings, { grant_type: "refresh_token", refresh_token }, init.signal);
+  };
+}
+
 function pendingCookies(request: NextRequest, settings: Settings) {
   const writes: Array<(response: NextResponse) => void> = [];
   const supabase = createServerClient(settings.supabaseUrl, settings.publishableKey, {
+    global: { fetch: drawingIdFetch(settings) },
     cookies: {
       getAll() { return request.cookies.getAll(); },
       setAll(items) {
@@ -152,21 +180,11 @@ export async function finishDrawingId(request: NextRequest) {
   }
 
   try {
-    const tokenResponse = await fetch(new URL("/auth/v1/oauth/token", settings.supabaseUrl), {
-      method: "POST",
-      cache: "no-store",
-      headers: {
-        "Content-Type": "application/x-www-form-urlencoded",
-        Accept: "application/json",
-      },
-      body: new URLSearchParams({
-        grant_type: "authorization_code",
-        code,
-        client_id: settings.clientId,
-        redirect_uri: settings.callback,
-        code_verifier: verifier,
-      }),
-      signal: AbortSignal.timeout(10000),
+    const tokenResponse = await requestOAuthToken(settings, {
+      grant_type: "authorization_code",
+      code,
+      redirect_uri: settings.callback,
+      code_verifier: verifier,
     });
 
     if (!tokenResponse.ok) return authFinish(settings, false);
@@ -184,7 +202,6 @@ export async function finishDrawingId(request: NextRequest) {
     });
     if (error) return authFinish(settings, false);
 
-    // Server-side verification, not a claim or an email parameter from the URL.
     const { data: { user }, error: userError } = await session.supabase.auth.getUser();
     if (userError || !user) return authFinish(settings, false);
 
