@@ -1,4 +1,4 @@
-export type Tab = 'friends' | 'chats' | 'stations' | 'more';
+export type Tab = 'friends' | 'chats' | 'stations' | 'wave' | 'more';
 
 export interface Room {
   id: string;

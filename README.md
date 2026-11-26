@@ -37,6 +37,7 @@ Codespaces에서 **Ports → 5173 → Open in Browser**를 선택하거나 개�
 | 친구 | 간결한 세로 친구 목록 및 1:1 대화로 이동 |
 | 채팅 | 최근 대화 목록, Enter 전송 / Shift+Enter 줄바꿈 |
 | Station | 독립적인 관심사 채널 탐색 및 데모 참여 |
+| Wave | Verse Talk 이전 대상. 실시간 연결은 비활성화된 준비 화면 |
 | 더보기 | 라이트/다크 테마, 데모 데이터 초기화 |
 
 가상의 친구·Station과 메시지를 사용하며, 사용자가 입력한 메시지는 **현재 브라우저의 localStorage에만 저장**됩니다. 비밀번호나 개인정보를 입력하지 마세요.
@@ -116,3 +117,7 @@ DRAWING_SSO_ENABLED=true
 이 저장소에는 이전 Discord 협동 육성 봇 Weblings 소스(`bot.py`, `weblings/` 등)가 남아 있습니다. 삭제하지 않고 보존했지만, **최상위 Dockerfile은 이제 Next.js Drawing Chat을 빌드하고 실행**하도록 변경되었습니다. 예전 Discord 봇 배포와 동시에 운영하려면 서비스/도커 설정을 분리해야 합니다.
 
 이전 정적 HTML 시안은 `drawing-chat/index.html`에 참고용으로 보존했습니다. 메인 개발 경로는 이제 `app/` 및 `components/`입니다.
+
+## Wave 이전 상태
+
+Verse Talk의 서비스 위치와 이름을 Drawing Chat / Wave로 일원화합니다. 기존 Verse의 채팅 기록은 이 변경으로 복사하거나 삭제하지 않습니다. 기존 익명 매칭을 그대로 활성화하지 않습니다. 공개 전에는 인증 및 권한, 차단/신고, 스팸 대응, 안전한 운영 정책과 실제 서버 검증이 필요합니다.

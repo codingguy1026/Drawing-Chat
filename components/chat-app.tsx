@@ -26,9 +26,10 @@ const tabs: { key: Tab; label: string; icon: IconName }[] = [
   { key: 'friends', label: '친구', icon: 'users' },
   { key: 'chats', label: '채팅', icon: 'chat' },
   { key: 'stations', label: 'Station', icon: 'hash' },
+  { key: 'wave', label: 'Wave', icon: 'chat' },
   { key: 'more', label: '더보기', icon: 'more' },
 ];
-const titles: Record<Tab, string> = { friends: '친구', chats: '채팅', stations: '스테이션', more: '더보기' };
+const titles: Record<Tab, string> = { friends: '친구', chats: '채팅', stations: '스테이션', wave: 'Wave', more: '더보기' };
 function Avatar({ room }: { room: Room }) {
   return <span className={'pfp ' + room.color + (room.kind === 'station' ? ' station' : '')} aria-hidden="true">{room.initial}</span>;
 }
@@ -181,7 +182,7 @@ export default function ChatApp() {
     <div className={'app' + (opened ? ' detail-open' : '')}>
       <nav className="rail" aria-label="주 메뉴">
         <div className="logo" aria-label="Drawing Chat">d.</div>
-        {tabs.slice(0, 3).map(item => (
+        {tabs.filter(item => item.key !== 'more').map(item => (
           <button key={item.key} type="button" className={tab === item.key ? 'active' : ''} onClick={() => switchTab(item.key)} title={item.label} aria-label={item.label}>
             <Icon name={item.icon} />
             {tab === item.key && <span className="dot" />}
@@ -197,12 +198,14 @@ export default function ChatApp() {
           <div className="eyebrow">DRAWING / CHAT</div>
           <div className="heading">
             <h1>{titles[tab]}</h1>
-            {tab !== 'more' && <button type="button" className="icon-btn" aria-label="새 대화" onClick={() => { switchTab('friends'); setNotice('친구 목록에서 대화를 시작해 보세요.'); }}><Icon name="plus" /></button>}
+            {tab !== 'more' && tab !== 'wave' && <button type="button" className="icon-btn" aria-label="새 대화" onClick={() => { switchTab('friends'); setNotice('친구 목록에서 대화를 시작해 보세요.'); }}><Icon name="plus" /></button>}
           </div>
         </div>
-        {tab !== 'more' && <label className="search"><Icon name="search" /><input type="search" aria-label={titles[tab] + ' 검색'} value={query} onChange={event => setQuery(event.target.value)} placeholder="이름 또는 대화 검색" autoComplete="off" /></label>}
+        {tab !== 'more' && tab !== 'wave' && <label className="search"><Icon name="search" /><input type="search" aria-label={titles[tab] + ' 검색'} value={query} onChange={event => setQuery(event.target.value)} placeholder="이름 또는 대화 검색" autoComplete="off" /></label>}
         <div className="list">
-          {tab === 'more' ? (
+          {tab === 'wave' ? (
+            <><div className="list-title">DRAWING CHAT / WAVE</div><p className="notice">Verse Talk의 새 이름은 Wave예요. 실시간 서비스는 아직 열리지 않았어요.</p></>
+          ) : tab === 'more' ? (
             <>
               <div className="list-title">DRAWING CHAT</div>
               <button type="button" className="item" onClick={changeTheme}><Icon name="moon" /><span className="item-content"><span className="item-name">테마 변경</span><span className="item-sub">현재 {theme === 'dark' ? '다크' : '라이트'} 모드</span></span></button>
@@ -270,6 +273,13 @@ export default function ChatApp() {
             <div className="kicker">OPEN CONVERSATIONS</div><h2 className="hero-title">Station에서 모여요.</h2>
             <p className="intro">개인 채팅과 분리된 관심사 공간. 직접 들어갈 때만 대화가 보여요.</p>
             {stations.map(room => <div className="feature" key={room.id}><Avatar room={room} /><div className="feature-main"><h3>{room.name}</h3><p>{room.description} · {room.members}명</p></div><button className="secondary" type="button" onClick={() => openRoom(room)}>열기</button></div>)}
+          </div>
+        ) : tab === 'wave' ? (
+          <div className="detail-content">
+            <div className="kicker">DRAWING CHAT / WAVE</div><h2 className="hero-title">Wave</h2>
+            <p className="intro">Drawing Verse의 Verse Talk가 Drawing Chat으로 자리를 옮깁니다. 현재는 서비스 준비 화면이며 다른 사용자와 연결되지 않습니다.</p>
+            <div className="notice"><strong>공개 서비스 준비 중</strong><p>Drawing ID 인증, 서버 메시지 권한, 차단·신고와 운영 검증이 완료되기 전에는 실시간 대화가 열리지 않습니다.</p></div>
+            <button className="secondary" type="button" onClick={() => switchTab('more')}>Drawing ID 설정 보기</button>
           </div>
         ) : tab === 'more' ? (
           <div className="detail-content">
