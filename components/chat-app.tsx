@@ -60,6 +60,7 @@ export default function ChatApp() {
 
   useEffect(() => {
     const url = new URL(window.location.href);
+    if (url.searchParams.get('tab') === 'wave') setTab('wave');
     const result = url.searchParams.get('drawing_id');
     if (result !== 'connected' && result !== 'failed') return;
     url.searchParams.delete('drawing_id');
