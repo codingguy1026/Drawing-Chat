@@ -5,8 +5,9 @@ import { contacts, initialMessages, stations, type Message, type Room, type Tab 
 import { DrawingIdPanel, useDrawingIdAuth } from './drawing-id-auth';
 
 const STORAGE_KEY = 'drawing-chat-next-demo-v1';
-type IconName = 'users' | 'chat' | 'hash' | 'more' | 'search' | 'plus' | 'back' | 'send' | 'moon' | 'shield' | 'info';
+type IconName = 'users' | 'chat' | 'hash' | 'more' | 'search' | 'plus' | 'back' | 'send' | 'moon' | 'shield' | 'info' | 'wave';
 const shapes: Record<IconName, ReactNode> = {
+  wave: <><path d="M2 8c2.2 0 2.8-3 5-3s2.8 3 5 3 2.8-3 5-3 2.8 3 5 3" /><path d="M2 14c2.2 0 2.8-3 5-3s2.8 3 5 3 2.8-3 5-3 2.8 3 5 3" /><path d="M2 20c2.2 0 2.8-3 5-3s2.8 3 5 3 2.8-3 5-3 2.8 3 5 3" /></>,
   users: <><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75" /></>,
   chat: <path d="M21 11.5a8.4 8.4 0 0 1-.9 3.8A8.5 8.5 0 0 1 12.5 20a8.4 8.4 0 0 1-3.8-.9L3 21l1.9-5.7A8.4 8.4 0 0 1 4 11.5a8.5 8.5 0 0 1 4.7-7.6 8.4 8.4 0 0 1 3.8-.9h.5a8.5 8.5 0 0 1 8 8v.5z" />,
   hash: <><line x1="4" y1="9" x2="20" y2="9" /><line x1="4" y1="15" x2="20" y2="15" /><line x1="11" y1="3" x2="7" y2="21" /><line x1="17" y1="3" x2="13" y2="21" /></>,
@@ -26,7 +27,7 @@ const tabs: { key: Tab; label: string; icon: IconName }[] = [
   { key: 'friends', label: '친구', icon: 'users' },
   { key: 'chats', label: '채팅', icon: 'chat' },
   { key: 'stations', label: 'Station', icon: 'hash' },
-  { key: 'wave', label: 'Wave', icon: 'chat' },
+  { key: 'wave', label: 'Wave', icon: 'wave' },
   { key: 'more', label: '더보기', icon: 'more' },
 ];
 const titles: Record<Tab, string> = { friends: '친구', chats: '채팅', stations: '스테이션', wave: 'Wave', more: '더보기' };
@@ -180,7 +181,7 @@ export default function ChatApp() {
   }
 
   return (
-    <div className={'app' + (opened ? ' detail-open' : '')}>
+    <div className={'app' + (opened ? ' detail-open' : '') + (tab === 'wave' ? ' wave-active' : '')}>
       <nav className="rail" aria-label="주 메뉴">
         <div className="logo" aria-label="Drawing Chat">d.</div>
         {tabs.filter(item => item.key !== 'more').map(item => (
@@ -205,7 +206,13 @@ export default function ChatApp() {
         {tab !== 'more' && tab !== 'wave' && <label className="search"><Icon name="search" /><input type="search" aria-label={titles[tab] + ' 검색'} value={query} onChange={event => setQuery(event.target.value)} placeholder="이름 또는 대화 검색" autoComplete="off" /></label>}
         <div className="list">
           {tab === 'wave' ? (
-            <><div className="list-title">DRAWING CHAT / WAVE</div><p className="notice">Verse Talk의 새 이름은 Wave예요. 실시간 서비스는 아직 열리지 않았어요.</p></>
+            <div className="wave-side">
+              <div className="list-title">WAVE / OVERVIEW</div>
+              <div className="wave-side-card"><span className="wave-side-icon"><Icon name="wave" /></span><div><strong>Wave 홈</strong><p>서비스 소개 및 준비 현황</p></div></div>
+              <div className="wave-side-status"><span className="wave-status-dot" /> 서비스 준비 중</div>
+              <p className="wave-side-copy">Verse Talk의 새로운 이름. 실시간 대화는 아직 제공되지 않습니다.</p>
+              <button className="secondary wave-account" type="button" onClick={() => switchTab('more')}>Drawing ID 설정</button>
+            </div>
           ) : tab === 'more' ? (
             <>
               <div className="list-title">DRAWING CHAT</div>
@@ -276,11 +283,28 @@ export default function ChatApp() {
             {stations.map(room => <div className="feature" key={room.id}><Avatar room={room} /><div className="feature-main"><h3>{room.name}</h3><p>{room.description} · {room.members}명</p></div><button className="secondary" type="button" onClick={() => openRoom(room)}>열기</button></div>)}
           </div>
         ) : tab === 'wave' ? (
-          <div className="detail-content">
-            <div className="kicker">DRAWING CHAT / WAVE</div><h2 className="hero-title">Wave</h2>
-            <p className="intro">Drawing Verse의 Verse Talk가 Drawing Chat으로 자리를 옮깁니다. 현재는 서비스 준비 화면이며 다른 사용자와 연결되지 않습니다.</p>
-            <div className="notice"><strong>공개 서비스 준비 중</strong><p>Drawing ID 인증, 서버 메시지 권한, 차단·신고와 운영 검증이 완료되기 전에는 실시간 대화가 열리지 않습니다.</p></div>
-            <button className="secondary" type="button" onClick={() => switchTab('more')}>Drawing ID 설정 보기</button>
+          <div className="detail-content wave-home">
+            <section className="wave-hero" aria-labelledby="wave-title">
+              <div className="wave-art" aria-hidden="true"><svg viewBox="0 0 480 240" preserveAspectRatio="xMidYMid slice">{[0,1,2,3,4,5,6].map(i => <path key={i} d={`M-50 ${45+i*25} C 35 ${-40+i*25}, 105 ${150+i*25}, 200 ${65+i*25} S 365 ${-30+i*25}, 530 ${65+i*25}`} opacity={0.18+i*0.04} />)}</svg></div>
+              <div className="wave-hero-copy">
+                <span className="wave-brand-icon"><Icon name="wave" /></span>
+                <span className="wave-kicker">DRAWING CHAT / WAVE</span>
+                <h2 id="wave-title">Wave</h2>
+                <p>대화가 흐르는 새로운 공간.</p>
+                <span className="wave-status"><span className="wave-status-dot" /> 서비스 준비 중</span>
+              </div>
+            </section>
+            <section className="wave-section" aria-labelledby="wave-about">
+              <div className="wave-section-head"><div><span className="kicker">A NEW HOME</span><h3 id="wave-about">새로운 이름, 새로운 공간</h3></div></div>
+              <p>Drawing Verse의 Verse Talk가 Drawing Chat으로 자리를 옮겼어요. 지금은 서비스 소개 화면이며 다른 사용자와 연결되지 않습니다.</p>
+            </section>
+            <section className="wave-section" aria-labelledby="wave-readiness">
+              <div className="wave-section-head"><div><span className="kicker">SERVICE READINESS</span><h3 id="wave-readiness">서비스 준비 현황</h3></div></div>
+              <div className="wave-readiness">
+                {([{icon:'users',title:'Drawing ID',desc:'계정 인증 및 권한 확인'}, {icon:'chat',title:'메시지 시스템',desc:'서버 저장 및 접근 권한 검증'}, {icon:'shield',title:'안전 기능',desc:'차단·신고 및 운영 검증'}] as {icon:IconName;title:string;desc:string}[]).map(item => <div className="wave-feature" key={item.title}><span className="wave-feature-icon"><Icon name={item.icon} /></span><div><h4>{item.title}</h4><p>{item.desc}</p></div><span className="wave-pending">검증 전</span></div>)}
+              </div>
+              <button className="secondary wave-account" type="button" onClick={() => switchTab('more')}>Drawing ID 설정 보기</button>
+            </section>
           </div>
         ) : tab === 'more' ? (
           <div className="detail-content">
